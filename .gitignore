@@ -5,3 +5,4 @@ venv/
 backend/credentials/*.json
 backend/data/
 server.log
+venv
