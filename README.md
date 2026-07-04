@@ -1,111 +1,115 @@
-# QuensultingAI Dental Clinic — AI Receptionist Voice Agent
+QuensultingAI Dental Clinic — AI Receptionist Voice Agent
 
-An inbound voice receptionist built on **RetellAI Conversation Flow** (node-based, not a single prompt), backed by a **FastAPI** automation service that writes bookings to **Google Sheets** and fires **email + webhook** confirmations.
+An inbound voice receptionist for a dental clinic, built on RetellAI Conversation Flow (a real node/branching graph, not a single mega-prompt) and backed by a FastAPI automation service that persists bookings to Google Sheets and sends email + webhook confirmations.
 
-```
-Caller ──(phone)──> RetellAI Agent ──(Conversation Flow nodes)──┐
-                                                                  │  function-call webhooks
-                                                                  ▼
-                                              FastAPI backend (this repo)
-                                                  ├─ availability_service  (business rules)
-                                                  ├─ sheets_service        (Google Sheets, retry + local fallback)
-                                                  ├─ email_service         (SMTP confirmation, patient + staff)
-                                                  └─ webhook_service       (outbound webhook, retry)
-```
+The agent handles inbound calls end-to-end: greets the caller, answers FAQs, books appointments with real-time availability checking, collects an optional email for a confirmation, and transfers to a human for emergencies or anything it can't resolve.
 
-## Repository layout
+Architecture
 
-```
+                 ┌────────────────────────────────────────────────┐
+Caller ──(call)──▶  RetellAI Agent (Conversation Flow)              │
+                 │  greeting → FAQ / booking / message              │
+                 │  global emergency & human-request detection      │
+                 └───────────────┬──────────────────────────────────┘
+                                 │ function-call webhooks (HTTPS)
+                                 ▼
+                 ┌────────────────────────────────────────────────┐
+                 │  FastAPI backend (this repo)                    │
+                 │  ├─ availability_service   business-hours rules │
+                 │  ├─ sheets_service         Google Sheets +      │
+                 │  │                         retry + CSV fallback │
+                 │  ├─ email_service          SMTP confirmations   │
+                 │  └─ webhook_service        outbound webhook     │
+                 └────────────────────────────────────────────────┘
+
+Conversation flow (Retell dashboard):
+
+Greeting → FAQ Handling ⇄ (loop)
+        → Book Appointment → Extract Booking Data → check_availability
+              ├─ available   → book_appointment → Collect Email
+              │                                       ├─ declined → Closing
+              │                                       └─ given   → Extract Variables
+              │                                                     → send_confirmation_email → Closing
+              └─ not available → back to Book Appointment (offers alternatives)
+
+        → Take Message → Closing
+
+[Global] Emergency Detection ─┐
+[Global] Human Request Detection ─┴─→ Escalate → Transfer to Front Desk (warm transfer)
+
+The two "global" nodes can trigger from any point in the call, not just from the greeting — a caller can interrupt a booking mid-flow to report an emergency and get routed to a human immediately.
+
+Repository layout
+
 retell_agent/
-  conversation_flow.json     # RetellAI Conversation Flow — import this into a new Agent
+  conversation_flow_agent_import.json   # Full RetellAI Agent JSON — import via dashboard
 backend/
   app/
-    main.py                  # FastAPI entrypoint, global error handling, /health
-    config.py                # env-driven settings
-    models.py                # Pydantic schemas + validation
-    routers/retell_functions.py   # the 3 webhook endpoints Retell calls
+    main.py                      # FastAPI entrypoint, global error handling, /health
+    config.py                    # env-driven settings (pydantic-settings)
+    models.py                    # Pydantic request/response schemas + validation
+    routers/retell_functions.py  # the webhook endpoints Retell's function nodes call
     services/
-      availability_service.py     # working-hours + slot logic
-      sheets_service.py           # Google Sheets read/write, retries, CSV fallback
-      email_service.py            # SMTP confirmation (patient + internal)
-      webhook_service.py          # outbound webhook with retry
+      availability_service.py   # working-hours / slot logic
+      sheets_service.py         # Google Sheets read/write, retries, CSV fallback
+      email_service.py          # SMTP confirmation (patient + internal)
+      webhook_service.py        # outbound webhook with retry
   requirements.txt
   .env.example
 docs/
   architecture.md
   loom_script.md
-```
 
-## 1. RetellAI setup
+API endpoints
 
-1. In the Retell dashboard, create a new Agent → choose **Conversation Flow** (not single-prompt).
-2. Use the JSON editor / import feature to load `retell_agent/conversation_flow.json`.
-   - Replace `YOUR_BACKEND_DOMAIN` in the two `tools[].url` fields with your deployed backend URL (see §3).
-   - Replace the placeholder transfer number in `node_human_transfer.transfer_destination.number` with the clinic's real front-desk line.
-3. Apply the `recommended_agent_settings` block values on the **Agent** settings tab (interruption sensitivity, responsiveness, backchannel, silence timeout) — these are agent-level, not flow-node-level, in Retell.
-4. Attach a phone number to the agent (Retell → Phone Numbers → Buy/Import → assign to this agent).
-5. Test via Retell's web call simulator before going live on a real number.
+All four are called directly by Retell's custom-function nodes, except /health.
 
-> Note: RetellAI's Conversation Flow JSON schema is evolving; if a field name has shifted since this was written, the fastest fix is to open this JSON in Retell's visual flow editor — it will surface schema mismatches directly and you can re-save from the UI.
+EndpointCalled by (Retell node)PurposePOST /webhook/check-availabilitycheck_availabilityValidates service + working hours + day, checks for double-booking against the Sheet, suggests alternate slots when unavailablePOST /webhook/book-appointmentbook_appointmentRe-validates availability server-side (closes the race condition), persists the booking to Google Sheets (falls back to a local CSV log if Sheets is unreachable), notifies clinic staff by emailPOST /webhook/send-confirmation-emailsend_confirmation_emailFired only if the caller opted in and gave an email during the post-booking Collect Email step; sends the patient their own confirmation. Kept as a separate call from booking so the booking itself never depends on email succeedingGET /healthuptime checks / load balancersLiveness probe
 
-## 2. Backend setup
+Interactive schema docs (once running): http://localhost:8000/docs
 
-```bash
-cd backend
-python3 -m venv venv && source venv/bin/activate
-pip install -r requirements.txt --break-system-packages   # or omit the flag in a venv
-cp .env.example .env
-```
+Environment variables
 
-### Google Sheets
-1. Google Cloud Console → create a Service Account → generate a JSON key → save as `backend/credentials/google_service_account.json`.
-2. Create a Google Sheet, add a tab named `Appointments` (or set `GOOGLE_SHEET_TAB_NAME`).
-3. Share the sheet with the service account's `client_email` (Editor access).
-4. Put the Sheet ID (from its URL) into `.env` as `GOOGLE_SHEET_ID`.
-   - The service auto-creates the header row on first write if missing.
+See backend/.env.example for the full list with defaults. The ones you must set for a working deployment:
 
-### Email (SMTP)
-- Easiest: Gmail + an [App Password](https://myaccount.google.com/apppasswords) (not your normal password).
-- Or point `SMTP_HOST`/`SMTP_PORT` at SendGrid/Mailgun/etc. SMTP relay.
-- Both the patient (if you extend the flow to collect email) and `CLINIC_NOTIFY_EMAIL` (staff) get notified.
+VariablePurposeGOOGLE_SHEET_IDTarget spreadsheet ID (from the Sheet's URL)GOOGLE_SERVICE_ACCOUNT_FILEPath to the service account JSON key (must be Editor on the Sheet)SMTP_USERNAME / SMTP_PASSWORDSMTP auth (Gmail App Password or a transactional SMTP provider)CLINIC_NOTIFY_EMAILInternal staff address that gets a copy of every bookingCONFIRMATION_WEBHOOK_URLOptional — Slack/n8n/CRM webhook for appointment_booked eventsRETELL_WEBHOOK_SIGNING_SECRET + VERIFY_RETELL_SIGNATURE=trueEnable in production so only Retell can call these endpoints
 
-### Outbound webhook
-- Set `CONFIRMATION_WEBHOOK_URL` to a Slack Incoming Webhook, an n8n Webhook node, a CRM endpoint, etc. Used for both `appointment_booked` and `call_escalated` events (distinguish by the `event` field in the payload).
+Running locally
 
-### Run locally
-```bash
+bashcd backend
+python3 -m venv venv && source venv/bin/activate    # Windows: venv\Scripts\activate
+pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8000
-```
-Expose it to Retell during development with a tunnel (e.g. `ngrok http 8000`), then use the ngrok HTTPS URL in the flow's tool URLs. For production, deploy to Render/Railway/Fly.io/EC2 behind HTTPS and set `VERIFY_RETELL_SIGNATURE=true` with a shared signing secret.
 
-### Endpoints
-| Endpoint | Called by | Purpose |
-|---|---|---|
-| `POST /webhook/check-availability` | `node_check_availability` | Validates service/hours/day, checks for double-booking, suggests alternatives |
-| `POST /webhook/book-appointment` | `node_save_booking` | Re-validates, persists to Sheets (with local CSV fallback), sends email + webhook |
-| `POST /webhook/escalate` | optional, before/at `node_human_transfer` | Audit-log + notifies staff when a call is escalated |
-| `GET /health` | uptime checks | Liveness probe |
+For local Retell testing, expose it with a tunnel (ngrok http 8000) and point the Retell function-node URLs at the resulting HTTPS address. Free ngrok URLs change on every restart — remember to update both function nodes in Retell if you restart the tunnel.
 
-Interactive API docs: `http://localhost:8000/docs`.
+Deploying
 
-## 3. Design decisions & why
+Any standard ASGI host works (Render, Railway, Fly.io, EC2 behind a reverse proxy). Requirements:
 
-- **Conversation Flow, not a mega-prompt.** Each node has a single job (greet, triage emergency, collect one field, call a function, confirm, close). This makes behavior debuggable node-by-node in Retell's transcript view and keeps the LLM's job at each turn narrow, which reduces hallucination and makes branching conditions easy to reason about.
-- **Interruptions & natural turn-taking** are handled by Retell's agent-level `interruption_sensitivity` / `responsiveness` / `enable_backchannel` settings (documented in `conversation_flow.json`'s `recommended_agent_settings`), not by conversation logic — that's the correct layer for it.
-- **Emergency triage runs before general intent routing** at the top of the flow (`node_emergency_check`), because a caller in pain should never get routed into a multi-step booking form.
-- **Fallback has a bounded retry.** `node_fallback` explicitly avoids an infinite clarification loop — after one retry it escalates to a human rather than frustrating the caller indefinitely.
-- **Booking data is never lost**, even if Google Sheets is down: writes retry 3x with backoff, then fall back to a local CSV that can be reconciled later. Availability reads fail open (assume not taken) rather than blocking a booking on a transient read error — write-time de-dup on `appointment_id` is the real safety net.
-- **Email/webhook failures never fail a booking.** The appointment is already durably saved before either is attempted; failures are logged and reported back as flags (`email_sent`, `webhook_sent`) so the agent can optionally mention it to the caller.
-- **Server-side re-validation on booking**, not just at the check-availability step, closes the race condition where two callers check the same slot seconds apart.
-- **Idempotency via `call_id` + generated `appointment_id`** protects against Retell retrying a function call on network hiccups causing duplicate rows.
 
-## 4. Testing performed
+HTTPS (Retell requires it)
+google_service_account.json present at the path in GOOGLE_SERVICE_ACCOUNT_FILE (mount as a secret file, don't commit it)
+All .env values set as real environment variables/secrets on the host
+VERIFY_RETELL_SIGNATURE=true with RETELL_WEBHOOK_SIGNING_SECRET set, once you have Retell's signing secret, so the endpoints reject anything that isn't actually from Retell
 
-All three webhook endpoints were exercised locally with Retell-shaped payloads: valid booking, Sunday/out-of-hours rejection with alternative-slot suggestions, invalid service name, malformed date/time, invalid phone number, and the no-credentials fallback path (Sheets unreachable → local CSV; SMTP unreachable → logged and reported as `email_sent: false` without failing the booking). See `docs/architecture.md` for sample requests/responses.
 
-## 5. What's out of scope / next steps
+Design decisions
 
-- Real Retell import + live phone number test (do this after deploying the backend and swapping in `YOUR_BACKEND_DOMAIN`).
-- Rescheduling/cancellation flow (currently booking-only; same node pattern extends cleanly).
-- Collecting patient email in-call for direct confirmation (currently phone-only by design, since email is unreliable to capture by voice; the backend already supports it — just add a `node_collect_email` and pass it through).
-- Multi-tenant clinic support, persistent slot calendar (currently Sheets acts as the source of truth for double-booking checks, sufficient for single-location volume).
+
+Conversation Flow, not a mega-prompt. Each node has one job (greet, ask one thing, call a function, branch, close). This is what's debuggable node-by-node in Retell's transcript view, and it's what the assignment explicitly requires over prompt-only agents.
+Emergency triage and human-request detection are global nodes, not just edges off the greeting — a caller can trigger them from anywhere in the call, e.g. mid-booking.
+Interruption handling and turn-taking are Retell agent-level settings (interruption_sensitivity, responsiveness, enable_backchannel), not conversation logic — that's the correct layer for it in Retell's architecture.
+Email confirmation is a separate step and a separate backend call from booking. The caller is asked for an email only after the appointment is already confirmed and saved — so a caller who has no email, or declines, still gets a fully working booking. send-confirmation-email is a no-op (not an error) when no email was given.
+Booking data is never lost. Sheets writes retry 3x with backoff, then fall back to a local CSV that can be reconciled manually if Sheets is ever down. Availability reads fail open (assume "not taken") rather than blocking a booking over a transient read error — the write-time check on appointment_id is the actual duplicate-prevention safety net.
+Server-side re-validation at booking time, not just at the earlier check-availability step, closes the race condition where two callers could check the same slot seconds apart.
+call_id is treated as optional, with a generated fallback, since Retell's function-call envelope doesn't always populate it — the booking should never fail purely over a missing tracking ID.
+
+
+Known limitations / next steps
+
+
+Single-location, single-timezone clinic (CLINIC_TIMEZONE in config); no multi-tenant support.
+Google Sheets is the source of truth for slot conflicts — sufficient for single-location call volume, not built for high concurrency.
+Booking-only; no reschedule/cancel flow yet (the same node pattern — collect, extract, call function, branch — extends directly to it).
+No automated test suite yet; endpoints were validated manually against Retell-shaped payloads covering the happy path, out-of-hours/Sunday rejection, invalid service, malformed date/time, invalid phone, and Sheets/SMTP-unreachable fallback paths.
