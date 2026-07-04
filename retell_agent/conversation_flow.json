@@ -1,0 +1,624 @@
+{
+  "agent_id": "",
+  "channel": "voice",
+  "last_modification_timestamp": 1783060476576,
+  "agent_name": "QuensultingAI Dental Clinic Receptionist_new",
+  "version_description": "",
+  "response_engine": {
+    "type": "conversation-flow",
+    "version": 1,
+    "conversation_flow_id": "conversation_flow_50752faf2da9"
+  },
+  "language": "en-US",
+  "data_storage_setting": "everything",
+  "opt_in_signed_url": false,
+  "end_call_after_silence_ms": 20000,
+  "version": 1,
+  "base_version": 0,
+  "assigned_tags": [],
+  "is_published": false,
+  "version_title": "",
+  "post_call_analysis_model": "gpt-4.1-mini",
+  "pii_config": {
+    "mode": "post_call",
+    "categories": []
+  },
+  "handbook_config": {
+    "default_personality": true,
+    "ai_disclosure": true
+  },
+  "post_call_analysis_data": [
+    {
+      "name": "call_type",
+      "description": "The primary reason the caller called.",
+      "type": "enum",
+      "choices": [
+        "book_appointment",
+        "general_question",
+        "emergency",
+        "leave_message",
+        "other"
+      ]
+    },
+    {
+      "type": "boolean",
+      "name": "task_completed",
+      "description": "Whether the caller's primary request was successfully handled by the agent."
+    },
+    {
+      "type": "boolean",
+      "name": "transferred_to_staff",
+      "description": "Whether the call was transferred to clinic staff."
+    },
+    {
+      "type": "string",
+      "name": "caller_name",
+      "description": "The caller's full name, if provided."
+    },
+    {
+      "type": "system-presets",
+      "name": "call_summary",
+      "description": "Write a 1-3 sentence summary of the call based on the call transcript."
+    },
+    {
+      "type": "system-presets",
+      "name": "call_successful",
+      "description": "Evaluate whether the agent had a successful call with the user."
+    },
+    {
+      "type": "system-presets",
+      "name": "user_sentiment",
+      "description": "Evaluate user's sentiment, mood and satisfaction level."
+    }
+  ],
+  "voice_id": "minimax-Cimo",
+  "voice_temperature": 1,
+  "voice_speed": 1,
+  "volume": 1,
+  "enable_backchannel": true,
+  "backchannel_frequency": 0.7,
+  "reminder_trigger_ms": 8000,
+  "reminder_max_count": 2,
+  "max_call_duration_ms": 900000,
+  "interruption_sensitivity": 0.7,
+  "responsiveness": 0.9,
+  "allow_user_dtmf": true,
+  "user_dtmf_options": {},
+  "conversationFlow": {
+    "conversation_flow_id": "conversation_flow_50752faf2da9",
+    "version": 1,
+    "last_modification_timestamp": 1783060476566,
+    "global_prompt": "You are Aria, the AI front-desk receptionist for QuensultingAI Dental Clinic, located at 214 MG Road, Bengaluru, Karnataka 560001.\n\nClinic hours: Monday to Saturday, 9:00 AM to 6:00 PM. Closed Sundays.\n\nServices offered: Dental Cleaning, Root Canal Treatment, Teeth Whitening, Braces Consultation, Tooth Extraction, General Dental Consultation.\n\nFees: General Consultation is INR 500 (waived if the patient proceeds with treatment same day). Specialist consultations (Braces, Root Canal) are INR 800.\n\nPayment methods accepted: Cash, Credit/Debit Card, UPI, and insurance partners DentalCare+, HealthSecure, and MediAssist.\n\nWalk-ins are accepted but appointments are prioritized; walk-ins may need to wait.\n\nGuidelines:\n- Be warm, calm, and professional, like a real front-desk receptionist.\n- NEVER give medical/dental advice or diagnose. If asked, say: \"I'm not able to give medical advice, but I can connect you with our dental team.\" Then offer to transfer.\n- If the caller describes severe pain, swelling, bleeding, trauma, or a knocked-out tooth, treat this as an emergency: acknowledge with urgency and connect them to clinic staff immediately. Do not attempt to book a routine appointment for emergencies.\n- Confirm spellings of names and read back phone numbers digit-by-digit before proceeding.\n- Do not invent appointment availability. Collect the caller's preferred date/time and let them know it will be confirmed.\n- Keep responses concise and conversational — avoid long monologues.\n- Only use the facts provided here; if you don't know an answer, say so honestly and offer to take a message or transfer to staff.",
+    "nodes": [
+      {
+        "name": "Greeting",
+        "edges": [
+          {
+            "destination_node_id": "node_booking",
+            "id": "edge_greeting_to_booking",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The caller wants to book, schedule, or ask about an appointment"
+            }
+          },
+          {
+            "destination_node_id": "node_faq",
+            "id": "edge_greeting_to_faq",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The caller has a general question about the clinic such as hours, location, fees, payment, walk-ins, or services"
+            }
+          },
+          {
+            "destination_node_id": "node_take_message",
+            "id": "edge_greeting_to_message",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The caller wants to leave a message for staff"
+            }
+          }
+        ],
+        "id": "node_greeting",
+        "type": "conversation",
+        "display_position": {
+          "x": 550,
+          "y": 0
+        },
+        "instruction": {
+          "type": "prompt",
+          "text": "Greet the caller warmly. Say: \"Thank you for calling QuensultingAI Dental Clinic, this is Aria. How can I help you today?\" Listen for their intent before asking any personal details."
+        }
+      },
+      {
+        "name": "FAQ Handling",
+        "edges": [
+          {
+            "destination_node_id": "node_booking",
+            "id": "edge_faq_to_booking",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The caller now wants to book an appointment"
+            }
+          },
+          {
+            "destination_node_id": "node_closing",
+            "id": "edge_faq_to_closing",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The caller says that's all or indicates they are done"
+            }
+          }
+        ],
+        "id": "node_faq",
+        "type": "conversation",
+        "display_position": {
+          "x": 1100,
+          "y": 0
+        },
+        "instruction": {
+          "type": "prompt",
+          "text": "Answer the caller's question using only the clinic facts in the global instructions (hours, location, fees, payment methods, services, walk-in policy). Be concise. After answering, ask if there's anything else you can help with, or if they'd like to book an appointment."
+        }
+      },
+      {
+        "name": "Book Appointment",
+        "edges": [
+          {
+            "destination_node_id": "node_extract_data",
+            "id": "edge_booking_done",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "All booking details have been collected and confirmed by the caller"
+            }
+          }
+        ],
+        "id": "node_booking",
+        "type": "conversation",
+        "display_position": {
+          "x": 1650,
+          "y": 300
+        },
+        "instruction": {
+          "type": "prompt",
+          "text": "Help the caller book an appointment. Collect all of the following, one at a time, confirming as you go:\n1. Which service: Dental Cleaning, Root Canal Treatment, Teeth Whitening, Braces Consultation, Tooth Extraction, or General Dental Consultation\n2. Full name of the patient (confirm spelling)\n3. Best contact phone number (read back to confirm)\n4. Preferred date and time (remind them clinic hours are Monday-Saturday 9 AM-6 PM, closed Sunday)\n5. Whether they are a returning patient\n6. Insurance provider if any (DentalCare+, HealthSecure, MediAssist, or none)\n\nOnce all details are collected, summarize everything back to the caller and ask them to confirm it's correct. Let them know their appointment request has been noted and they will receive a confirmation shortly. Do NOT claim a specific slot is guaranteed available."
+        }
+      },
+      {
+        "name": "Extract Booking Data",
+        "variables": [
+          {
+            "type": "string",
+            "name": "caller_name",
+            "description": "The patient's full name"
+          },
+          {
+            "type": "string",
+            "name": "caller_phone",
+            "description": "The patient's contact phone number"
+          },
+          {
+            "type": "string",
+            "name": "service_requested",
+            "description": "The dental service requested"
+          },
+          {
+            "type": "string",
+            "name": "preferred_date",
+            "description": "Preferred appointment date"
+          },
+          {
+            "type": "string",
+            "name": "preferred_time",
+            "description": "Preferred appointment time"
+          },
+          {
+            "type": "string",
+            "name": "insurance_provider",
+            "description": "Insurance provider name, or none"
+          },
+          {
+            "type": "boolean",
+            "name": "is_returning_patient",
+            "description": "Whether the caller has visited before"
+          }
+        ],
+        "id": "node_extract_data",
+        "else_edge": {
+          "destination_node_id": "node-1783059159399",
+          "id": "edge_extract_to_closing",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Else"
+          }
+        },
+        "type": "extract_dynamic_variables",
+        "display_position": {
+          "x": 2142,
+          "y": 342
+        }
+      },
+      {
+        "name": "Take Message",
+        "edges": [
+          {
+            "destination_node_id": "node_closing",
+            "id": "edge_message_to_closing",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "Message has been fully collected and confirmed"
+            }
+          }
+        ],
+        "id": "node_take_message",
+        "type": "conversation",
+        "display_position": {
+          "x": 1100,
+          "y": 600
+        },
+        "instruction": {
+          "type": "prompt",
+          "text": "Take a message for clinic staff. Collect: full name, callback phone number, and the message itself. Read it back to confirm accuracy. Let them know a staff member will return their call, typically within one business day."
+        }
+      },
+      {
+        "name": "Emergency / Human Escalation",
+        "id": "node_escalate",
+        "type": "conversation",
+        "display_position": {
+          "x": 1650,
+          "y": 900
+        },
+        "instruction": {
+          "type": "prompt",
+          "text": "The caller needs to speak with clinic staff — this could be an emergency, frustration, or an explicit request for a human. Acknowledge with empathy and urgency where appropriate. Say: \"I understand, let me connect you with our clinic staff right away.\" Keep this brief. Do not ask follow-up questions."
+        },
+        "always_edge": {
+          "destination_node_id": "node_transfer",
+          "id": "edge_escalate_to_transfer",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Always"
+          }
+        }
+      },
+      {
+        "instruction": {
+          "type": "prompt",
+          "text": "The caller has described a dental emergency (severe pain, swelling, bleeding, trauma, knocked-out tooth). Acknowledge with empathy and urgency. Do not attempt to book a routine appointment."
+        },
+        "always_edge": {
+          "destination_node_id": "node_escalate",
+          "id": "edge_global_emergency_to_escalate",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Always"
+          }
+        },
+        "name": "Emergency Detection",
+        "global_node_setting": {
+          "condition": "The caller mentions severe tooth pain, swelling, bleeding, dental trauma, a knocked-out tooth, or says it's a dental emergency, at any point in the conversation."
+        },
+        "id": "node_global_emergency",
+        "type": "conversation",
+        "display_position": {
+          "x": 550,
+          "y": 900
+        }
+      },
+      {
+        "instruction": {
+          "type": "prompt",
+          "text": "The caller has explicitly asked to speak with a human, staff member, or manager, or sounds frustrated. Acknowledge and do not try to talk them out of it."
+        },
+        "always_edge": {
+          "destination_node_id": "node_escalate",
+          "id": "edge_global_human_to_escalate",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Always"
+          }
+        },
+        "name": "Human Request Detection",
+        "global_node_setting": {
+          "condition": "The caller explicitly asks to speak to a human, real person, staff member, receptionist, or manager, or is clearly frustrated with the AI agent."
+        },
+        "id": "node_global_human_request",
+        "type": "conversation",
+        "display_position": {
+          "x": 550,
+          "y": 1200
+        }
+      },
+      {
+        "custom_sip_headers": {},
+        "transfer_destination": {
+          "type": "predefined",
+          "number": "+916306655652"
+        },
+        "edge": {
+          "destination_node_id": "node_transfer_failed",
+          "id": "edge_transfer_failed",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Transfer failed"
+          }
+        },
+        "name": "Transfer to Front Desk",
+        "ignore_e164_validation": false,
+        "id": "node_transfer",
+        "transfer_option": {
+          "type": "warm_transfer",
+          "show_transferee_as_caller": true,
+          "enable_bridge_audio_cue": true
+        },
+        "type": "transfer_call",
+        "display_position": {
+          "x": 2200,
+          "y": 900
+        },
+        "speak_during_execution": false
+      },
+      {
+        "name": "Transfer Failed Fallback",
+        "edges": [],
+        "id": "node_transfer_failed",
+        "type": "conversation",
+        "display_position": {
+          "x": 2750,
+          "y": 900
+        },
+        "instruction": {
+          "type": "prompt",
+          "text": "The transfer could not be completed. Let the caller know a staff member will call them back shortly. Thank them and say goodbye."
+        }
+      },
+      {
+        "instruction": {
+          "type": "prompt",
+          "text": "Thank the caller for calling QuensultingAI Dental Clinic and wish them a great day. Keep it brief and warm."
+        },
+        "name": "Closing",
+        "edges": [],
+        "id": "node_closing",
+        "type": "conversation",
+        "display_position": {
+          "x": 2750,
+          "y": 300
+        },
+        "skip_response_edge": {
+          "destination_node_id": "node_end",
+          "id": "edge_closing_to_end",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Skip response"
+          }
+        }
+      },
+      {
+        "name": "End Call",
+        "id": "node_end",
+        "type": "end",
+        "display_position": {
+          "x": 3300,
+          "y": 300
+        },
+        "speak_during_execution": false
+      },
+      {
+        "tool_id": "check_availability",
+        "name": "Check Availability",
+        "edges": [
+          {
+            "destination_node_id": "node-1783059165416",
+            "id": "edge-1783059207563-zzcmqv7nz",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The available variable returned by the function is true"
+            }
+          },
+          {
+            "destination_node_id": "node_booking",
+            "id": "edge-1783059493970-yd056prqw",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The available variable returned by the function is false"
+            }
+          }
+        ],
+        "enable_typing_sound": false,
+        "id": "node-1783059159399",
+        "type": "function",
+        "tool_type": "local",
+        "speak_during_execution": false,
+        "display_position": {
+          "x": 2574,
+          "y": 30
+        },
+        "wait_for_result": true
+      },
+      {
+        "tool_id": "book_appointment",
+        "name": "Book Appointment",
+        "edges": [
+          {
+            "destination_node_id": "node_closing",
+            "id": "edge-1783059655459-cay9pfit6",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The success variable returned by the function is true"
+            }
+          },
+          {
+            "destination_node_id": "node_escalate",
+            "id": "edge-1783059689933-j8mwbkelp",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The success variable returned by the function is false"
+            }
+          }
+        ],
+        "enable_typing_sound": false,
+        "id": "node-1783059165416",
+        "type": "function",
+        "tool_type": "local",
+        "speak_during_execution": false,
+        "display_position": {
+          "x": 3102,
+          "y": -66
+        },
+        "wait_for_result": true
+      },
+      {
+        "tool_id": "escalate",
+        "name": "Escalate",
+        "edges": [],
+        "enable_typing_sound": false,
+        "id": "node-1783059172403",
+        "type": "function",
+        "tool_type": "local",
+        "speak_during_execution": false,
+        "display_position": {
+          "x": 3270,
+          "y": 702
+        },
+        "wait_for_result": true
+      }
+    ],
+    "components": [],
+    "start_node_id": "node_greeting",
+    "start_speaker": "agent",
+    "tools": [
+      {
+        "tool_id": "check_availability",
+        "method": "POST",
+        "timeout_ms": 6000,
+        "name": "check_availability",
+        "description": "Checks whether the requested service/date/time slot is available at the clinic.",
+        "type": "custom",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "service_requested": {
+              "type": "string",
+              "description": "Dental service requested by the patient"
+            },
+            "preferred_time": {
+              "type": "string",
+              "description": "Appointment time in HH:MM 24-hour format"
+            },
+            "preferred_date": {
+              "type": "string",
+              "description": "Appointment date in YYYY-MM-DD format"
+            }
+          },
+          "required": [
+            "service_requested",
+            "preferred_date",
+            "preferred_time"
+          ]
+        },
+        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/check-availability"
+      },
+      {
+        "tool_id": "book_appointment",
+        "method": "POST",
+        "timeout_ms": 8000,
+        "name": "book_appointment",
+        "description": "Books a confirmed appointment, stores it in Google Sheets, sends confirmation email, and triggers downstream webhook.",
+        "type": "custom",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "service_requested": {
+              "type": "string"
+            },
+            "caller_name": {
+              "type": "string"
+            },
+            "preferred_time": {
+              "type": "string",
+              "description": "HH:MM in 24-hour format"
+            },
+            "caller_phone": {
+              "type": "string"
+            },
+            "insurance_provider": {
+              "type": "string"
+            },
+            "is_returning_patient": {
+              "type": "boolean"
+            },
+            "preferred_date": {
+              "type": "string",
+              "description": "YYYY-MM-DD"
+            },
+            "call_id": {
+              "type": "string",
+              "description": "Retell call ID"
+            }
+          },
+          "required": [
+            "caller_name",
+            "caller_phone",
+            "service_requested",
+            "preferred_date",
+            "preferred_time",
+            "call_id"
+          ]
+        },
+        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/book-appointment"
+      },
+      {
+        "tool_id": "escalate",
+        "method": "POST",
+        "timeout_ms": 5000,
+        "name": "escalate",
+        "description": "Logs an escalation event before transferring the caller to a human staff member.",
+        "type": "custom",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "caller_name": {
+              "type": "string"
+            },
+            "reason": {
+              "type": "string",
+              "description": "Reason for escalation"
+            },
+            "caller_phone": {
+              "type": "string"
+            },
+            "call_id": {
+              "type": "string",
+              "description": "Retell call ID"
+            }
+          },
+          "required": [
+            "reason",
+            "call_id"
+          ]
+        },
+        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/escalate"
+      }
+    ],
+    "model_choice": {
+      "type": "cascading",
+      "model": "gpt-5.1",
+      "high_priority": false
+    },
+    "model_temperature": 0,
+    "tool_call_strict_mode": true,
+    "default_dynamic_variables": {},
+    "knowledge_base_ids": [],
+    "kb_config": {
+      "top_k": 3,
+      "filter_score": 0.6
+    },
+    "begin_tag_display_position": {
+      "x": 0,
+      "y": 175
+    },
+    "is_published": false,
+    "is_transfer_cf": false
+  }
+}

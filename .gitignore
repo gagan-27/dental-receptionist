@@ -1,0 +1,7 @@
+.env
+__pycache__/
+*.pyc
+venv/
+backend/credentials/*.json
+backend/data/
+server.log
