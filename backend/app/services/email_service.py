@@ -51,6 +51,7 @@ def send_booking_confirmation(
     preferred_date: str,
     preferred_time: str,
     appointment_id: str,
+    notify_internal: bool= True
 ) -> bool:
     """
     NOTE: The Retell flow as designed collects phone, not email (voice calls
@@ -90,7 +91,7 @@ def send_booking_confirmation(
         patient_sent = _send(patient_email, subject, html_body, text_body)
 
     # Always notify internal front desk, regardless of patient email outcome.
-    if settings.CLINIC_NOTIFY_EMAIL:
+    if notify_internal and settings.CLINIC_NOTIFY_EMAIL:
         internal_subject = f"[New Booking] {caller_name} — {service_requested} on {preferred_date} {preferred_time}"
         _send(settings.CLINIC_NOTIFY_EMAIL, internal_subject, html_body, text_body)
 

@@ -1,23 +1,23 @@
 {
   "agent_id": "",
   "channel": "voice",
-  "last_modification_timestamp": 1783060476576,
+  "last_modification_timestamp": 1783344886585,
   "agent_name": "QuensultingAI Dental Clinic Receptionist_new",
   "version_description": "",
   "response_engine": {
     "type": "conversation-flow",
-    "version": 1,
+    "version": 4,
     "conversation_flow_id": "conversation_flow_50752faf2da9"
   },
   "language": "en-US",
   "data_storage_setting": "everything",
   "opt_in_signed_url": false,
   "end_call_after_silence_ms": 20000,
-  "version": 1,
-  "base_version": 0,
+  "version": 4,
+  "base_version": 3,
   "assigned_tags": [],
   "is_published": false,
-  "version_title": "",
+  "version_title": "ngork",
   "post_call_analysis_model": "gpt-4.1-mini",
   "pii_config": {
     "mode": "post_call",
@@ -86,8 +86,8 @@
   "user_dtmf_options": {},
   "conversationFlow": {
     "conversation_flow_id": "conversation_flow_50752faf2da9",
-    "version": 1,
-    "last_modification_timestamp": 1783060476566,
+    "version": 4,
+    "last_modification_timestamp": 1783345000450,
     "global_prompt": "You are Aria, the AI front-desk receptionist for QuensultingAI Dental Clinic, located at 214 MG Road, Bengaluru, Karnataka 560001.\n\nClinic hours: Monday to Saturday, 9:00 AM to 6:00 PM. Closed Sundays.\n\nServices offered: Dental Cleaning, Root Canal Treatment, Teeth Whitening, Braces Consultation, Tooth Extraction, General Dental Consultation.\n\nFees: General Consultation is INR 500 (waived if the patient proceeds with treatment same day). Specialist consultations (Braces, Root Canal) are INR 800.\n\nPayment methods accepted: Cash, Credit/Debit Card, UPI, and insurance partners DentalCare+, HealthSecure, and MediAssist.\n\nWalk-ins are accepted but appointments are prioritized; walk-ins may need to wait.\n\nGuidelines:\n- Be warm, calm, and professional, like a real front-desk receptionist.\n- NEVER give medical/dental advice or diagnose. If asked, say: \"I'm not able to give medical advice, but I can connect you with our dental team.\" Then offer to transfer.\n- If the caller describes severe pain, swelling, bleeding, trauma, or a knocked-out tooth, treat this as an emergency: acknowledge with urgency and connect them to clinic staff immediately. Do not attempt to book a routine appointment for emergencies.\n- Confirm spellings of names and read back phone numbers digit-by-digit before proceeding.\n- Do not invent appointment availability. Collect the caller's preferred date/time and let them know it will be confirmed.\n- Keep responses concise and conversational — avoid long monologues.\n- Only use the facts provided here; if you don't know an answer, say so honestly and offer to take a message or transfer to staff.",
     "nodes": [
       {
@@ -175,8 +175,8 @@
         "id": "node_booking",
         "type": "conversation",
         "display_position": {
-          "x": 1650,
-          "y": 300
+          "x": 1566,
+          "y": 318
         },
         "instruction": {
           "type": "prompt",
@@ -224,7 +224,7 @@
         ],
         "id": "node_extract_data",
         "else_edge": {
-          "destination_node_id": "node-1783059159399",
+          "destination_node_id": "node-1783344646953",
           "id": "edge_extract_to_closing",
           "transition_condition": {
             "type": "prompt",
@@ -252,8 +252,8 @@
         "id": "node_take_message",
         "type": "conversation",
         "display_position": {
-          "x": 1100,
-          "y": 600
+          "x": 1110,
+          "y": 438
         },
         "instruction": {
           "type": "prompt",
@@ -265,8 +265,8 @@
         "id": "node_escalate",
         "type": "conversation",
         "display_position": {
-          "x": 1650,
-          "y": 900
+          "x": 1638,
+          "y": 966
         },
         "instruction": {
           "type": "prompt",
@@ -301,8 +301,8 @@
         "id": "node_global_emergency",
         "type": "conversation",
         "display_position": {
-          "x": 550,
-          "y": 900
+          "x": 870,
+          "y": 990
         }
       },
       {
@@ -325,8 +325,8 @@
         "id": "node_global_human_request",
         "type": "conversation",
         "display_position": {
-          "x": 550,
-          "y": 1200
+          "x": 654,
+          "y": 558
         }
       },
       {
@@ -382,8 +382,8 @@
         "id": "node_closing",
         "type": "conversation",
         "display_position": {
-          "x": 2750,
-          "y": 300
+          "x": 2742,
+          "y": 366
         },
         "skip_response_edge": {
           "destination_node_id": "node_end",
@@ -405,34 +405,110 @@
         "speak_during_execution": false
       },
       {
+        "name": "Collect Email",
+        "edges": [
+          {
+            "destination_node_id": "node-1783151284449",
+            "id": "edge-1783151085522-1nq3lbfi8",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "Email Address of the patient has been collected and confirmed by the caller."
+            }
+          },
+          {
+            "destination_node_id": "node_closing",
+            "id": "edge-1783151259100-tj2yb0m2a",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "Email address not provided by the caller, proceed without it"
+            }
+          }
+        ],
+        "id": "node-1783151085522",
+        "type": "conversation",
+        "display_position": {
+          "x": 2790,
+          "y": -90
+        },
+        "instruction": {
+          "type": "prompt",
+          "text": "The appointment is already confirmed. Ask the caller: \"Would you like a confirmation email sent as well? If so, what's the best email address?\" If they decline or don't have one, that's completely fine — proceed without it.\nCofirm the email (read back to confirm)."
+        }
+      },
+      {
+        "variables": [
+          {
+            "name": "caller_email",
+            "type": "string",
+            "description": "Email address of the caller to send the confirmation mail "
+          }
+        ],
+        "else_edge": {
+          "destination_node_id": "node-1783344720574",
+          "id": "node-1783151284449-else-edge",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Else"
+          }
+        },
+        "name": "Extract Variables",
+        "edges": [],
+        "id": "node-1783151284449",
+        "type": "extract_dynamic_variables",
+        "display_position": {
+          "x": 3390,
+          "y": 390
+        }
+      },
+      {
         "tool_id": "check_availability",
         "name": "Check Availability",
         "edges": [
           {
-            "destination_node_id": "node-1783059165416",
-            "id": "edge-1783059207563-zzcmqv7nz",
+            "id": "edge-1783184818267-2kabs1kp9",
             "transition_condition": {
               "type": "prompt",
               "prompt": "The available variable returned by the function is true"
             }
           },
           {
-            "destination_node_id": "node_booking",
-            "id": "edge-1783059493970-yd056prqw",
+            "id": "edge-1783184853343-5x5wu3m98",
             "transition_condition": {
               "type": "prompt",
-              "prompt": "The available variable returned by the function is false"
+              "prompt": "The available variable returned by the function is false."
             }
           }
         ],
         "enable_typing_sound": false,
-        "id": "node-1783059159399",
+        "id": "node-1783184784139",
         "type": "function",
         "tool_type": "local",
         "speak_during_execution": false,
         "display_position": {
-          "x": 2574,
-          "y": 30
+          "x": 2238,
+          "y": -1626
+        },
+        "wait_for_result": true
+      },
+      {
+        "tool_id": "tool-1783153023659",
+        "else_edge": {
+          "id": "node-1783184806168-else-edge",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Else"
+          }
+        },
+        "name": "Send Confirmation Email",
+        "edges": [],
+        "enable_typing_sound": false,
+        "id": "node-1783184806168",
+        "type": "function",
+        "tool_type": "local",
+        "speak_during_execution": false,
+        "display_position": {
+          "x": 4590,
+          "y": 1782
         },
         "wait_for_result": true
       },
@@ -441,45 +517,115 @@
         "name": "Book Appointment",
         "edges": [
           {
-            "destination_node_id": "node_closing",
-            "id": "edge-1783059655459-cay9pfit6",
+            "id": "edge-1783185066891-pnvgqomj5",
             "transition_condition": {
               "type": "prompt",
-              "prompt": "The success variable returned by the function is true"
+              "prompt": "The success variable returned by the function is True"
             }
           },
           {
-            "destination_node_id": "node_escalate",
-            "id": "edge-1783059689933-j8mwbkelp",
+            "id": "edge-1783185073646-3t4bxu7il",
             "transition_condition": {
               "type": "prompt",
-              "prompt": "The success variable returned by the function is false"
+              "prompt": "The success variable returned by the function is False"
             }
           }
         ],
         "enable_typing_sound": false,
-        "id": "node-1783059165416",
+        "id": "node-1783185060905",
+        "type": "function",
+        "tool_type": "local",
+        "speak_during_execution": false,
+        "display_position": {
+          "x": 1806,
+          "y": -1722
+        },
+        "wait_for_result": true
+      },
+      {
+        "tool_id": "check_availability",
+        "name": "Check Availability",
+        "edges": [
+          {
+            "destination_node_id": "node-1783344684951",
+            "id": "edge-1783344661598-4vqo0yvu6",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The available variable returned by the function is true"
+            }
+          },
+          {
+            "destination_node_id": "node_booking",
+            "id": "edge-1783344667155-1llnm6eox",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The available variable returned by the function is false"
+            }
+          }
+        ],
+        "enable_typing_sound": false,
+        "id": "node-1783344646953",
+        "type": "function",
+        "tool_type": "local",
+        "speak_during_execution": false,
+        "display_position": {
+          "x": 1854,
+          "y": -138
+        },
+        "wait_for_result": true
+      },
+      {
+        "tool_id": "book_appointment",
+        "name": "Book Appointment",
+        "edges": [
+          {
+            "destination_node_id": "node-1783151085522",
+            "id": "edge-1783344694909-1ig753vms",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The success variable returned by the function is True"
+            }
+          },
+          {
+            "destination_node_id": "node_escalate",
+            "id": "edge-1783344699879-3q2mjtlgb",
+            "transition_condition": {
+              "type": "prompt",
+              "prompt": "The success variable returned by the function is True"
+            }
+          }
+        ],
+        "enable_typing_sound": false,
+        "id": "node-1783344684951",
+        "type": "function",
+        "tool_type": "local",
+        "speak_during_execution": false,
+        "display_position": {
+          "x": 2286,
+          "y": -90
+        },
+        "wait_for_result": true
+      },
+      {
+        "tool_id": "tool-1783153023659",
+        "else_edge": {
+          "destination_node_id": "node_closing",
+          "id": "node-1783344720574-else-edge",
+          "transition_condition": {
+            "type": "prompt",
+            "prompt": "Else"
+          }
+        },
+        "name": "Send Confirmation Email",
+        "edges": [],
+        "enable_typing_sound": false,
+        "id": "node-1783344720574",
         "type": "function",
         "tool_type": "local",
         "speak_during_execution": false,
         "display_position": {
           "x": 3102,
-          "y": -66
-        },
-        "wait_for_result": true
-      },
-      {
-        "tool_id": "escalate",
-        "name": "Escalate",
-        "edges": [],
-        "enable_typing_sound": false,
-        "id": "node-1783059172403",
-        "type": "function",
-        "tool_type": "local",
-        "speak_during_execution": false,
-        "display_position": {
-          "x": 3270,
-          "y": 702
+          "y": 822
         },
         "wait_for_result": true
       }
@@ -489,14 +635,25 @@
     "start_speaker": "agent",
     "tools": [
       {
-        "tool_id": "check_availability",
+        "headers": {},
+        "parameter_type": "form",
         "method": "POST",
-        "timeout_ms": 6000,
-        "name": "check_availability",
+        "query_params": {},
         "description": "Checks whether the requested service/date/time slot is available at the clinic.",
         "type": "custom",
+        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/check-availability",
+        "tool_id": "check_availability",
+        "args_at_root": false,
+        "timeout_ms": 6000,
+        "name": "check_availability",
+        "response_variables": {},
         "parameters": {
           "type": "object",
+          "required": [
+            "service_requested",
+            "preferred_date",
+            "preferred_time"
+          ],
           "properties": {
             "service_requested": {
               "type": "string",
@@ -510,24 +667,32 @@
               "type": "string",
               "description": "Appointment date in YYYY-MM-DD format"
             }
-          },
-          "required": [
-            "service_requested",
-            "preferred_date",
-            "preferred_time"
-          ]
-        },
-        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/check-availability"
+          }
+        }
       },
       {
-        "tool_id": "book_appointment",
+        "headers": {},
+        "parameter_type": "form",
         "method": "POST",
-        "timeout_ms": 8000,
-        "name": "book_appointment",
+        "query_params": {},
         "description": "Books a confirmed appointment, stores it in Google Sheets, sends confirmation email, and triggers downstream webhook.",
         "type": "custom",
+        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/book-appointment",
+        "tool_id": "book_appointment",
+        "args_at_root": false,
+        "timeout_ms": 300000,
+        "name": "book_appointment",
+        "response_variables": {},
         "parameters": {
           "type": "object",
+          "required": [
+            "caller_name",
+            "caller_phone",
+            "service_requested",
+            "preferred_date",
+            "preferred_time",
+            "call_id"
+          ],
           "properties": {
             "service_requested": {
               "type": "string"
@@ -556,17 +721,8 @@
               "type": "string",
               "description": "Retell call ID"
             }
-          },
-          "required": [
-            "caller_name",
-            "caller_phone",
-            "service_requested",
-            "preferred_date",
-            "preferred_time",
-            "call_id"
-          ]
-        },
-        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/book-appointment"
+          }
+        }
       },
       {
         "tool_id": "escalate",
@@ -599,6 +755,63 @@
           ]
         },
         "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/escalate"
+      },
+      {
+        "headers": {},
+        "parameter_type": "form",
+        "method": "POST",
+        "query_params": {},
+        "description": "Sends the confirmation email to the caller if email provided",
+        "enable_typing_sound": false,
+        "type": "custom",
+        "url": "https://status-ipad-palpable.ngrok-free.dev/webhook/send-confirmation-email",
+        "tool_id": "tool-1783153023659",
+        "args_at_root": false,
+        "timeout_ms": 120000,
+        "speak_after_execution": true,
+        "name": "send_confirmation_email",
+        "response_variables": {
+          "message": "",
+          "email sent": "",
+          "success": ""
+        },
+        "speak_during_execution": false,
+        "parameters": {
+          "type": "object",
+          "required": [
+            "caller_name",
+            "appointment_id",
+            "service_requested",
+            "preferred_date",
+            "preferred_time"
+          ],
+          "properties": {
+            "service_requested": {
+              "type": "string",
+              "description": "The dental service booked"
+            },
+            "caller_email": {
+              "type": "string",
+              "description": ""
+            },
+            "appointment_id": {
+              "type": "string",
+              "description": "The appointment ID returned from booking"
+            },
+            "caller_name": {
+              "type": "string",
+              "description": "The patient's full name"
+            },
+            "preferred_time": {
+              "type": "string",
+              "description": "Appointment time in HH:MM 24-hour format"
+            },
+            "preferred_date": {
+              "type": "string",
+              "description": "Appointment date in YYYY-MM-DD format"
+            }
+          }
+        }
       }
     ],
     "model_choice": {
@@ -615,10 +828,11 @@
       "filter_score": 0.6
     },
     "begin_tag_display_position": {
-      "x": 0,
-      "y": 175
+      "x": 174,
+      "y": 174
     },
     "is_published": false,
+    "flex_mode": false,
     "is_transfer_cf": false
   }
 }

@@ -237,6 +237,7 @@ async def send_confirmation_email(request: Request, x_retell_signature: str | No
         preferred_date=args.preferred_date,
         preferred_time=args.preferred_time,
         appointment_id=args.appointment_id,
+        notify_internal=False
     )
  
     logger.info(
